@@ -85,7 +85,12 @@ def main():
     print("  [3/4] app.html (%.0fKB) · version.json 작성" % (os.path.getsize(APP) / 1024))
 
     # ---- 4. push ---------------------------------------------------------
-    if not run("git", "status", "--porcelain"):
+    if not run("git", "remote"):
+        print("  [4/4] GitHub 저장소가 아직 연결되지 않아 push를 건너뜁니다.")
+        print("        (최초 1회) 저장소를 만든 뒤 아래를 실행하세요:")
+        print('          cd "%s"' % HERE)
+        print("          git remote add origin https://github.com/<계정>/seat.git")
+    elif not run("git", "status", "--porcelain"):
         print("  [4/4] 바뀐 내용이 없어 push를 건너뜁니다.")
     else:
         run("git", "add", "-A")
