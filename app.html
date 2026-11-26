@@ -14,7 +14,7 @@
 /* document.open()으로 문서를 갈아끼워도 window는 그대로 살아 있다.
    교체된 새 문서에서는 이 표시를 반드시 지워야 본문 스크립트가 실행된다. */
 window.__SEAT_SWAPPED=false;
-var APP_VERSION="2026.09.30.1";/*@VERSION@*/
+var APP_VERSION="2026.11.26.1";/*@VERSION@*/
 var UPDATE_BASE="https://minhaalsgk9596-netizen.github.io/seat/";
 var CACHE_KEY="seat_app_cache_v1";
 
@@ -24,6 +24,7 @@ var CACHE_KEY="seat_app_cache_v1";
    직접 적을 때는 최신 버전이 항상 맨 위에 오도록 하세요. ────────── */
 var CHANGELOG=[
 /*@CHANGELOG@*/
+  {v:"2026.11.26.1", d:"2026-11-26", items:["세부 기능 개선"]},
   {v:"2026.09.30.1", d:"2026-09-30", items:["세부 기능 개선"]},
   {v:"2026.09.29.6", d:"2026-09-29", items:["세부 기능 개선"]},
   {v:"2026.09.29.5", d:"2026-09-29", items:[
@@ -147,6 +148,8 @@ select:disabled { background:#f1f5f9; color:#94a3b8; }
 .btn:disabled { background:#cbd5e1; cursor:not-allowed; }
 .btn:not(:disabled):hover { background:#255f95; }
 .row-inputs { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.row-inputs.five { grid-template-columns:repeat(5,1fr); gap:5px; }
+.row-inputs.five select { min-width:0; }
 .cap { margin-top:10px; font-size:13px; padding:8px 10px; border-radius:8px; }
 .cap.ok { background:#eaf6ee; color:#15803d; } .cap.err { background:#fdeaea; color:#b91c1c; }
 .hidden { display:none; }
@@ -327,6 +330,23 @@ dialog.modal { width:min(920px,96vw); }
 /* 화면 좌석표 방향 라벨 (1줄 쪽 = 운동장) */
 .chartroom { display:flex; gap:10px; align-items:stretch; margin:2px 0; }
 .chartroom .seatgrid { flex:1; margin:0; }
+/* 1·2학년 혼합 시험실 */
+.mix-box { margin-top:14px; padding:12px; border:1px solid #d6e4f5; border-radius:10px; background:#f5f9ff; }
+.mix-box h2 { margin:0 0 6px; }
+.mix-toggle { display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:700; color:#1f3864; cursor:pointer; }
+.mix-box textarea { width:100%; box-sizing:border-box; min-height:64px; margin-top:6px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:7px; font-size:13px; font-family:inherit; resize:vertical; }
+.xfer-state { font-size:12px; color:#475569; margin-top:5px; line-height:1.55; }
+.xfer-state .bad { color:#b91c1c; font-weight:700; }
+.coltag.mv { color:#8064a2; } .coltag.hm { color:#2e75b6; }
+.coltag.mv, .coltag.hm { font-size:15px; font-weight:800; }
+.seat.mover .sid { color:#8064a2; font-size:13px; }
+.seat.mover { border-style:double; border-width:4px; }
+.xfer-note { font-size:12.5px; color:#475569; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:7px 10px; margin-top:10px; }
+.pxfer { font-size:13px; color:#334155; margin-top:6px; border-top:1px dashed #94a3b8; padding-top:5px; }
+.pseat.mover { border-style:double; border-width:4px; }
+.pseat.mover .psid { font-size:15px; }
+.pxfer { flex-shrink:0; }
+@media print { .pxfer { font-size:14px; line-height:1.35; } .pseat.mover .psid { font-size:17px; } .sheet { overflow:hidden; } }
 .cside { writing-mode:vertical-rl; text-align:center; font-weight:700; color:#1f3864; background:#eef4fc; border:1.5px solid #cdddf2; border-radius:8px; padding:6px 3px; font-size:13px; display:flex; align-items:center; justify-content:center; min-width:26px; letter-spacing:2px; }
 
 /* 배포용(데이터 내장) */
@@ -406,6 +426,16 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <button id="btn-open-sched" class="btn-sm">🗓 시험 시간표 편집</button>
     <div id="sched-summary" class="sched-summary"></div>
 
+    <div class="mix-box" id="mix-box">
+      <h2>1·2학년 혼합 시험실</h2>
+      <label class="mix-toggle"><input type="checkbox" id="mix-on"> 1·2학년 섞어서 배치하기</label>
+      <p class="hint" style="margin:6px 0 0">같은 반 번호끼리 짝(1-1↔2-1 …)을 지어, 각 반 <b>앞 번호 13명</b>(전환학급 응시자 제외)이 상대 반 교실로 갑니다. 교실은 <b>이동반|본반|이동반|본반|이동반</b> 5줄입니다. 3학년은 그대로입니다.</p>
+      <label style="display:block;font-size:12.5px;color:#334155;margin-top:8px;font-weight:600">전환학급 응시 학생 (한 줄에 한 명: 학년-반-번호, 예 <code>1-3-7</code>)
+        <textarea id="xfer-text" placeholder="1-3-7&#10;2-5-12"></textarea>
+      </label>
+      <div id="xfer-state" class="xfer-state"></div>
+    </div>
+
     <h2>③ 시험·반 선택</h2>
     <div class="selects">
       <label>학년 <select id="sel-grade" disabled></select></label>
@@ -415,17 +445,18 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <button id="btn-run" class="btn" disabled>명단 생성</button>
 
     <div id="seatcfg" class="hidden">
-      <h2>④ 좌석 설정 (4개 줄)</h2>
-      <p class="hint">각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.</p>
+      <h2 id="seatcfg-title">④ 좌석 설정 (4개 줄)</h2>
+      <p class="hint" id="seatcfg-hint">각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.</p>
       <div class="row-inputs">
         <label>1줄 <select class="seat-sel" id="col-0"></select></label>
         <label>2줄 <select class="seat-sel" id="col-1"></select></label>
         <label>3줄 <select class="seat-sel" id="col-2"></select></label>
         <label>4줄 <select class="seat-sel" id="col-3"></select></label>
+        <label id="col-4-wrap" class="hidden">5줄 <select class="seat-sel" id="col-4"></select></label>
       </div>
       <div class="dir-inputs">
         <label>1줄 쪽 방향 <input type="text" id="dir-left" value="운동장"></label>
-        <label>4줄 쪽 방향 <input type="text" id="dir-right" value="복도"></label>
+        <label><span id="dir-right-label">4줄 쪽 방향</span> <input type="text" id="dir-right" value="복도"></label>
       </div>
       <div id="cap" class="cap"></div>
       <button id="btn-seat" class="btn">자리 배치 생성</button>
@@ -562,6 +593,13 @@ const STAMP_KEY="seating.embedStamp.v1";
 const MS_KEY="seating.manualSeats.v1";
 const EXC_KEY="seating.excludedStudents.v1";   // 전 과목에서 자리를 비운 학생
 const SEX_KEY="seating.sessionExcluded.v1";    // 그 교시에서만 자리를 비운 학생
+const MIX_KEY="seating.mixMode.v1";            // 1·2학년 혼합 시험실 켜기/끄기
+const XFER_KEY="seating.transfer.v1";          // 전환학급 응시 학생 {"학년|반|번호":true}
+const MIXC_KEY="seating.mixCounts.v1";         // 혼합 시험실 줄별 좌석 수
+const MOVERS=13;                               // 상대 반 교실로 옮기는 인원
+const XFER_KINDS=["전환학급"];                  // 응시현황 파일에서 '교실 밖 응시'로 읽는 열
+const MIX_DEFAULT=[5,6,4,6,4];                 // 이동반|본반|이동반|본반|이동반
+const MIX_MOVER_COLS=[0,2,4], MIX_HOME_COLS=[1,3];
 
 // ===== 드래그로 손본 자리 배치 저장: 학년|반|날짜|교시 별로 기억 =====
 function loadManualSeats(){ try{ var j=JSON.parse(localStorage.getItem(MS_KEY)); if(j&&typeof j==="object") return j; }catch(e){} return {}; }
@@ -659,9 +697,35 @@ function sameSession(a,b){ return !!a&&!!b&&a.date===b.date&&a.period===b.period
 // ===== 학생 이름 수정(오버라이드) 저장: 새로고침·재업로드 후에도 유지 =====
 function loadOverrides(){ try{ var j=JSON.parse(localStorage.getItem(NO_KEY)); if(j&&typeof j==="object") return j; }catch(e){} return {}; }
 var nameOverrides=loadOverrides();
-function ovKey(cls,id){ return currentGrade+"|"+cls+"|"+id; }
-function applyNameOverrides(){ roster.forEach(function(s){ var v=nameOverrides[ovKey(s.cls,s.id)]; if(v!=null && v!=="") s.name=v; }); }
-function saveNameOverride(cls,id,nm){ nameOverrides[ovKey(cls,id)]=nm; localStorage.setItem(NO_KEY, JSON.stringify(nameOverrides)); }
+function ovKey(g,cls,id){ return g+"|"+cls+"|"+id; }
+// 모든 학년 명렬표에 이름 수정을 반영 (혼합 시험실에는 다른 학년 학생도 앉으므로)
+function applyNameOverrides(){
+  Object.keys(rostersByGrade).forEach(function(g){
+    ((rostersByGrade[g]||{}).students||[]).forEach(function(s){ var v=nameOverrides[ovKey(g,s.cls,s.id)]; if(v!=null && v!=="") s.name=v; });
+  });
+}
+function saveNameOverride(g,cls,id,nm){ nameOverrides[ovKey(g,cls,id)]=nm; localStorage.setItem(NO_KEY, JSON.stringify(nameOverrides)); }
+
+// ===== 1·2학년 혼합 시험실 =====
+// 1-1↔2-1, 1-2↔2-2 … 같은 반 번호끼리 짝. 각 반에서 전환학급 응시자를 뺀 앞 번호 13명이 상대 반 교실로 간다.
+var mixMode=!!lsGetEarly(MIX_KEY);
+var transfer=(function(){ var j=lsGetEarly(XFER_KEY); return (j&&typeof j==="object")? j : {}; })();
+var mixCounts=(function(){ var j=lsGetEarly(MIXC_KEY); return (Array.isArray(j)&&j.length===5)? j.map(Number) : MIX_DEFAULT.slice(); })();
+function lsGetEarly(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function partnerGrade(g){ g=String(g); return g==="1"?"2":(g==="2"?"1":""); }
+function studentsOf(g){ var R=rostersByGrade[String(g)]; return (R&&R.students)||[]; }
+function subjectsOf(g){ var R=rostersByGrade[String(g)]; return new Set((R&&R.subjects)||[]); }
+// 이 학년이 혼합 배치 대상인가 (스위치 켜짐 + 1·2학년 + 짝 학년 명렬표도 있음)
+function mixActive(g){ var p=partnerGrade(g||currentGrade); return !!(mixMode && p && studentsOf(g||currentGrade).length && studentsOf(p).length); }
+// 명렬표의 학번이 "번호"가 아니라 신학번(10307 등)이어도 끝 두 자리로 번호를 맞춘다
+function stuNo(s){ var n=Number(s.id); if(!isFinite(n)) return 0; return n>=1000? n%100 : n; }
+function isXfer(g,s){ return !!transfer[g+"|"+s.cls+"|"+stuNo(s)]; }
+function byNo(a,b){ return stuNo(a)-stuNo(b); }
+// 그 반에서 상대 반 교실로 옮겨가는 학생 (전환학급 제외, 앞 번호 13명)
+function moversOf(g,cls){
+  return studentsOf(g).filter(function(s){ return s.cls===cls && !isXfer(g,s); }).sort(byNo).slice(0,MOVERS);
+}
+function saveMix(){ lsSet(MIX_KEY,mixMode); lsSet(XFER_KEY,transfer); noteEmbedChanged(); }
 
 const PALETTE=["#2e75b6","#c0504d","#9bbb59","#8064a2","#4bacc6","#f79646"];
 const SUBJECT_COLORS={};
@@ -674,6 +738,7 @@ let roster=[];
 let rosterSubjects=new Set();
 let rostersByGrade={};
 let detectedGrade=null;
+let rosterXfer=null;      // 응시현황 파일에서 읽은 전환학급 학생 {"반|번호":"전환학급"}
 let currentGrade="";
 let schedule=[];
 let subjectsByGrade={};
@@ -688,9 +753,31 @@ const selGrade=$("sel-grade");
 const schedModal=$("sched-modal");
 const seatcfg=$("seatcfg"), btnSeat=$("btn-seat"), capDiv=$("cap");
 const summary=$("summary"), chart=$("chart"), rosterWrap=$("roster-wrap"), rosterDiv=$("roster");
-const seatSels=[0,1,2,3].map(i=>$("col-"+i));
+const allSeatSels=[0,1,2,3,4].map(i=>$("col-"+i));
+let seatSels=allSeatSels.slice(0,4);     // 지금 쓰는 줄 (보통 4줄, 혼합 시험실은 5줄)
+let seatMixed=null;                      // 좌석 설정 칸이 어떤 모드로 꾸며져 있는지
 
-seatSels.forEach(sel=>{ for(let v=5;v<=7;v++) sel.add(new Option(v+"석",v)); sel.value=6; sel.onchange=updateCap; });
+function fillSeatOpts(sel,lo,hi,val){ sel.innerHTML=""; for(let v=lo;v<=hi;v++) sel.add(new Option(v+"석",v)); sel.value=val; }
+// 학년·혼합 여부에 맞춰 좌석 설정 칸(4줄/5줄)을 꾸민다
+function syncSeatUI(){
+  var mixed=mixActive(currentGrade);
+  if(mixed===seatMixed) return;
+  seatMixed=mixed;
+  if(mixed){
+    seatSels=allSeatSels.slice();
+    seatSels.forEach(function(sel,k){ fillSeatOpts(sel,0,9,mixCounts[k]); });
+  }else{
+    seatSels=allSeatSels.slice(0,4);
+    seatSels.forEach(function(sel){ fillSeatOpts(sel,5,7,6); });
+  }
+  $("col-4-wrap").classList.toggle("hidden",!mixed);
+  document.querySelector(".row-inputs").classList.toggle("five",mixed);
+  $("seatcfg-title").textContent=mixed? "④ 좌석 설정 (5개 줄 · 혼합 시험실)" : "④ 좌석 설정 (4개 줄)";
+  $("seatcfg-hint").innerHTML=mixed? "1·3·5줄 = <b>이동반</b>(상대 학년), 2·4줄 = <b>본반</b>. 기본 5/6/4/6/4석이며 바꿀 수 있습니다." : "각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.";
+  $("dir-right-label").textContent=(mixed?"5":"4")+"줄 쪽 방향";
+}
+syncSeatUI();
+allSeatSels.forEach(sel=>{ sel.onchange=function(){ if(seatMixed){ mixCounts=allSeatSels.map(function(s){return Number(s.value);}); lsSet(MIXC_KEY,mixCounts); noteEmbedChanged(); } updateCap(); }; });
 
 // ===== 저장/불러오기 =====
 function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
@@ -737,9 +824,13 @@ var EMBED_ON=false;
     if(EMBEDDED_DATA.excluded) excluded=EMBEDDED_DATA.excluded;              // 전 과목 자리 비움
     if(EMBEDDED_DATA.sessionExcluded) sessionExcluded=EMBEDDED_DATA.sessionExcluded;  // 교시별 자리 비움
     if(EMBEDDED_DATA.manualSeats) manualSeats=EMBEDDED_DATA.manualSeats;     // 손본 배치·열 당기기 결과
+    mixMode=!!EMBEDDED_DATA.mixMode;                                         // 1·2학년 혼합 시험실 (예전 배포본은 꺼짐)
+    transfer=(EMBEDDED_DATA.transfer&&typeof EMBEDDED_DATA.transfer==="object")? EMBEDDED_DATA.transfer : {};
+    if(Array.isArray(EMBEDDED_DATA.mixCounts)&&EMBEDDED_DATA.mixCounts.length===5) mixCounts=EMBEDDED_DATA.mixCounts.map(Number);
     rostersByGrade=unpackRosters(EMBEDDED_DATA.rosters);
     saveSched(); saveSBG(); saveRosters();
     lsSet(NO_KEY, nameOverrides); lsSet(EXC_KEY, excluded); lsSet(SEX_KEY, sessionExcluded); lsSet(MS_KEY, manualSeats);
+    lsSet(MIX_KEY, mixMode); lsSet(XFER_KEY, transfer); lsSet(MIXC_KEY, mixCounts);
     lsSet(STAMP_KEY, EMBEDDED_DATA.stamp);
   }
 })();
@@ -795,6 +886,10 @@ function buildSessionSelect(){
   schedule.forEach(function(s,i){
     var subs=(currentGrade&&s.g[currentGrade])?s.g[currentGrade].filter(Boolean):[];
     var lab=s.date+" "+s.period+"교시"+(s.time?" ("+s.time+")":"")+" — "+(subs.length?subs.join("/"):"자습");
+    if(mixActive(currentGrade)){
+      var pg=partnerGrade(currentGrade), ps=(s.g[pg]||[]).filter(Boolean);
+      lab=s.date+" "+s.period+"교시"+(s.time?" ("+s.time+")":"")+" — "+currentGrade+"학년 "+(subs.length?subs.join("/"):"자습")+" · "+pg+"학년 "+(ps.length?ps.join("/"):"자습");
+    }
     selSession.add(new Option(lab,i));
   });
   selSession.disabled=false; updateRunEnabled();
@@ -820,6 +915,67 @@ schedModal.addEventListener("click",function(e){ if(e.target===schedModal) sched
   dlg.addEventListener("cancel",function(){ pendingOut=null; });          // ESC
   $("out-close").onclick=function(){ pendingOut=null; dlg.close(); };
   $("out-cancel").onclick=function(){ pendingOut=null; dlg.close(); };
+})();
+
+// ===== 1·2학년 혼합 시험실 · 전환학급 명단 배선 =====
+function xferKeysSorted(){
+  return Object.keys(transfer).filter(function(k){ return transfer[k]; }).sort(function(a,b){
+    var x=a.split("|").map(Number), y=b.split("|").map(Number);
+    return (x[0]-y[0])||(x[1]-y[1])||(x[2]-y[2]);
+  });
+}
+function xferText(){ return xferKeysSorted().map(function(k){ return k.split("|").join("-"); }).join("\n"); }
+// "1-3-7", "1 3 7", "1학년 3반 7번 홍길동" 등 → 앞의 숫자 세 개를 학년·반·번호로 읽는다
+function parseXfer(text){
+  var m={}, bad=[];
+  String(text||"").split(/[\n,;]+/).forEach(function(line){
+    var t=line.trim(); if(!t) return;
+    var n=t.match(/\d+/g);
+    if(!n||n.length<3||!/^[12]$/.test(n[0])){ bad.push(t); return; }
+    m[Number(n[0])+"|"+Number(n[1])+"|"+Number(n[2])]=true;
+  });
+  return {map:m,bad:bad};
+}
+var xferBad=[];
+function renderXferState(){
+  var st=$("xfer-state"); if(!st) return;
+  var keys=xferKeysSorted();
+  var parts=keys.map(function(k){
+    var p=k.split("|"), g=p[0], c=Number(p[1]), no=Number(p[2]);
+    var hit=null; studentsOf(g).forEach(function(s){ if(s.cls===c && stuNo(s)===no) hit=s; });
+    var lab=g+"-"+c+" "+no+"번";
+    return hit? esc(lab+" "+hit.name) : '<span class="bad">'+esc(lab)+" (명렬표에 없음)</span>";
+  });
+  var html=keys.length? "전환학급 <b>"+keys.length+"명</b>: "+parts.join(", ") : "전환학급 응시 학생 없음";
+  if(xferBad.length) html+='<br><span class="bad">읽지 못한 줄: '+esc(xferBad.join(" / "))+"</span>";
+  if(mixMode){
+    var miss=["1","2"].filter(function(g){ return !studentsOf(g).length; });
+    if(miss.length) html+='<br><span class="bad">⚠ '+miss.join("·")+"학년 명렬표가 없어 혼합 배치를 할 수 없습니다.</span>";
+  }
+  st.innerHTML=html;
+}
+function resetView(){
+  current=null;
+  seatcfg.classList.add("hidden");
+  chart.innerHTML=""; $("chart-actions").classList.add("hidden");
+  rosterWrap.classList.add("hidden");
+  summary.className="summary empty";
+  summary.textContent="세션과 반을 고르고 [명단 생성]을 누르세요.";
+}
+(function wireMix(){
+  var cb=$("mix-on"), ta=$("xfer-text");
+  cb.checked=mixMode;
+  ta.value=xferText();
+  cb.onchange=function(){
+    mixMode=cb.checked; saveMix();
+    syncSeatUI(); buildSessionSelect(); renderXferState(); resetView();
+    if(currentGrade) applyGrade(currentGrade);
+  };
+  ta.onchange=function(){
+    var r=parseXfer(ta.value); transfer=r.map; xferBad=r.bad; saveMix();
+    renderXferState();
+    if(current) runRoster();
+  };
 })();
 
 $("btn-add-session").onclick=function(){
@@ -854,9 +1010,9 @@ function parseTimetableRows(rows){
       if(v==="3학년") g["3"]=j;
       if(v==="날짜") cD=j;
     }
-    if(jP>=0 && g["1"]!=null && g["2"]!=null && g["3"]!=null){ hi=i; cP=jP; cT=jT; cG=g; break; }
+    if(jP>=0 && (g["1"]!=null || g["2"]!=null || g["3"]!=null)){ hi=i; cP=jP; cT=jT; cG=g; break; }
   }
-  if(hi<0) throw new Error("헤더(날짜·교시·1~3학년)를 찾지 못했습니다.");
+  if(hi<0) throw new Error("헤더(날짜·교시·학년)를 찾지 못했습니다.");
   var out=[], curDate="";
   for(var r=hi+1;r<rows.length;r++){
     var row=rows[r]||[], next=rows[r+1]||[];
@@ -916,6 +1072,12 @@ fileInput.addEventListener("change",function(e){
       subjectsByGrade[g]=Array.from(rosterSubjects); saveSBG();
       rostersByGrade[g]={ subjects:Array.from(rosterSubjects), students:roster };
       saveRosters();
+      if(rosterXfer){                // 응시현황 파일이면 그 학년 전환학급 명단을 파일 내용으로 바꾼다
+        Object.keys(transfer).forEach(function(k){ if(k.split("|")[0]===g) delete transfer[k]; });
+        Object.keys(rosterXfer).forEach(function(k){ transfer[g+"|"+k]=rosterXfer[k]; });
+        xferBad=[]; saveMix();
+        var ta=$("xfer-text"); if(ta) ta.value=xferText();
+      }
       buildGradeSelect(g);           // 학년 드롭다운 갱신 + 방금 불러온 학년 선택
       updateEmbedUI();
       e.target.value="";             // 같은 파일을 다시 고를 수 있도록 초기화
@@ -937,12 +1099,39 @@ function findHeaderRow(rows){
     var row=rows[i]||[];
     if(row.indexOf("이름")>=0 && row.indexOf("반배정")>=0) return {idx:i,type:"A"};
     if(row.indexOf("성명")>=0 && row.some(function(h){return String(h).indexOf("개설과목")>=0;})) return {idx:i,type:"B"};
+    // 응시현황(배포용) 「입력」 시트: 학번 | 반 | 번호 | 이름 | 과목들(O) | 자습 | 전환학급 | 직업위탁 | 다문화위탁 | 별도고사실
+    var hc=row.map(function(h){ return String(h).replace(/\s+/g,""); });
+    if(hc.indexOf("학번")>=0 && hc.indexOf("번호")>=0 && hc.indexOf("이름")>=0 && hc.indexOf("반")>=0) return {idx:i,type:"C"};
   }
   return {idx:0,type:"A"};
 }
 function parseRoster(rows){
-  detectedGrade=null;
+  detectedGrade=null; rosterXfer=null;
   var hi=findHeaderRow(rows); var hdr=rows[hi.idx]||[];
+  if(hi.type==="C"){
+    var hn=hdr.map(function(h){ return String(h).replace(/\s+/g,""); });
+    var cId=hn.indexOf("학번"), cC=hn.indexOf("반"), cN=hn.indexOf("번호"), cNm=hn.indexOf("이름");
+    var SPECIAL=["자습","전환학급","직업위탁","다문화위탁","별도고사실"];
+    var subjCols=[], spCols={};
+    for(var j=cNm+1;j<hdr.length;j++){
+      var h=String(hdr[j]).trim(); if(!h) continue;
+      if(SPECIAL.indexOf(hn[j])>=0){ spCols[hn[j]]=j; continue; }
+      if(Object.keys(spCols).length) continue;          // 자습·전환학급 열 뒤쪽은 과목이 아니다
+      subjCols.push({name:h,idx:j});
+    }
+    rosterSubjects=new Set(subjCols.map(function(c){ return c.name; }));
+    roster=[]; rosterXfer={};
+    for(var r3=hi.idx+1;r3<rows.length;r3++){
+      var w=rows[r3]; if(!w||String(w[cNm]).trim()==="") continue;
+      var cl=parseInt(String(w[cC]).replace(/[^0-9]/g,""),10), nb=parseInt(String(w[cN]).replace(/[^0-9]/g,""),10);
+      if(isNaN(cl)||isNaN(nb)) continue;
+      if(detectedGrade===null){ var sid=String(w[cId]).replace(/[^0-9]/g,""); if(sid.length>=5) detectedGrade=Number(sid.charAt(0)); }
+      var ss=new Set(); subjCols.forEach(function(c){ if(String(w[c.idx]).trim()!=="") ss.add(c.name); });
+      roster.push({id:nb, name:String(w[cNm]).trim(), cls:cl, subs:ss});
+      XFER_KINDS.forEach(function(k){ if(spCols[k]!=null && String(w[spCols[k]]).trim()!=="") rosterXfer[cl+"|"+nb]=k; });
+    }
+    return;
+  }
   if(hi.type==="B"){
     var cE=hdr.findIndex(function(h){return String(h).indexOf("개설과목")>=0;});
     var cCls=hdr.indexOf("반"), cNo=hdr.indexOf("번호"), cName=hdr.indexOf("성명"), cGr=hdr.indexOf("학년");
@@ -1008,9 +1197,11 @@ function applyGrade(g){
   rosterSubjects=new Set(R.subjects||[]);
   applyNameOverrides();
   buildClassSelect();
+  syncSeatUI();
   renderSchedule();
   updateRunEnabled();
-  loadStatus.textContent="✓ "+g+"학년 · 학생 "+roster.length+"명 · 과목 "+rosterSubjects.size+"개";
+  renderXferState();
+  loadStatus.textContent="✓ "+g+"학년 · 학생 "+roster.length+"명 · 과목 "+rosterSubjects.size+"개"+(mixActive(g)?" · 혼합 시험실(짝: "+partnerGrade(g)+"학년)":"");
   loadStatus.className="status ok";
 }
 selGrade.onchange=function(){
@@ -1039,7 +1230,9 @@ function updateEmbedUI(){
     st.className="hint dist-state";
     st.innerHTML="담길 내용 &rarr; 명렬표 <b>"+gradeListLabel()+"</b> · 시간표 <b>"+schedule.length+"교시</b> (과목 입력됨 "+filled+"교시)"
       +(nAll?" · 재적 제외 <b>"+nAll+"건</b>":"")+(nKeep?" · 자리만 공석 <b>"+nKeep+"건</b>":"")
-      +(nSeat?" · 손본 좌석표 <b>"+nSeat+"건</b>":"");
+      +(nSeat?" · 손본 좌석표 <b>"+nSeat+"건</b>":"")
+      +(mixMode?" · <b>1·2학년 혼합 시험실</b> ("+mixCounts.join("/")+"석)":"")
+      +(xferKeysSorted().length?" · 전환학급 <b>"+xferKeysSorted().length+"명</b>":"");
   }
   var eg=$("embed-grades"); if(eg) eg.textContent=gradeListLabel();
 }
@@ -1063,7 +1256,10 @@ function makeDist(){
     rosters:packRosters(),
     excluded:excluded,                   // 전 과목에서 자리 비움 ("all" 재적 제외 · "seat" 자리만 공석)
     sessionExcluded:sessionExcluded,     // 그 교시에서만 자리 비움
-    manualSeats:manualSeats              // 드래그로 손본 배치 · 열 당기기 결과
+    manualSeats:manualSeats,             // 드래그로 손본 배치 · 열 당기기 결과
+    mixMode:mixMode,                     // 1·2학년 혼합 시험실
+    transfer:transfer,                   // 전환학급 응시 학생
+    mixCounts:mixCounts                  // 혼합 시험실 줄별 좌석 수
   };
   var json=JSON.stringify(payload)
     .replace(/</g,"\\u003c").replace(/>/g,"\\u003e")
@@ -1098,22 +1294,70 @@ function runRoster(){
   seatcfg.classList.remove("hidden"); updateCap();
 }
 // 한 세션(교시)·한 반의 응시/자습 명단을 계산 (단일·일괄 인쇄 공용)
-function buildRosterCtx(sess,cls){
-  var examSubs=(sess.g[currentGrade]||[]).filter(Boolean);
-  var commonSubs=examSubs.filter(function(x){return !rosterSubjects.has(x);});
-  var inClass=roster.filter(function(s){return s.cls===cls;});
+// 한 학년 학생들을 그 교시 시간표에 맞춰 응시 과목/자습으로 분류
+// 과목명 비교용 정규화: 띄어쓰기·가운뎃점 무시, Ⅰ/Ⅱ → 1/2 ("기술·가정"="기술가정", "영어Ⅱ"="영어2")
+function normSubj(x){
+  return String(x||"").replace(/[\s·ㆍ・•.]/g,"").replace(/Ⅰ/g,"1").replace(/Ⅱ/g,"2").replace(/Ⅲ/g,"3").replace(/Ⅳ/g,"4");
+}
+function classifyStudents(g,sess,students){
+  var subjSet=subjectsOf(g);
+  var canon={}; subjSet.forEach(function(x){ canon[normSubj(x)]=x; });
+  // 시간표 과목명을 명렬표 과목명으로 맞춘다 (표기만 다른 경우)
+  var examSubs=((sess.g&&sess.g[g])||[]).filter(Boolean).map(function(x){ return subjSet.has(x)? x : (canon[normSubj(x)]||x); });
+  var commonSubs=examSubs.filter(function(x){return !subjSet.has(x);});
   var commonUsed=null;
-  var list=inClass.map(function(s){
-    var hit=examSubs.filter(function(x){return rosterSubjects.has(x) && s.subs.has(x);});
+  var list=students.map(function(s){
+    var hit=examSubs.filter(function(x){return subjSet.has(x) && s.subs.has(x);});
     var base;
     if(hit.length) base=Object.assign({},s,{status:"exam",subject:hit[0]});
     else if(commonSubs.length){ commonUsed=commonSubs[0]; base=Object.assign({},s,{status:"exam",subject:commonSubs[0]}); }
     else base=Object.assign({},s,{status:"self",subject:"자습"});
     base.ref=s;   // 마스터 명렬표 원본 참조 (이름 수정 시 일괄 인쇄에도 반영)
+    base.grade=String(g);
     return base;
   });
-  return {date:sess.date,period:sess.period,cls:cls,examSubs:examSubs,list:list,commonUsed:commonUsed};
+  return {examSubs:examSubs,list:list,commonUsed:commonUsed};
 }
+function buildRosterCtx(sess,cls){
+  var g=String(currentGrade);
+  if(mixActive(g)) return buildMixedCtx(sess,cls);
+  var inClass=roster.filter(function(s){return s.cls===cls;});
+  var xfer=inClass.filter(function(s){ return isXfer(g,s); }).sort(byNo);
+  var r=classifyStudents(g,sess,inClass.filter(function(s){ return !isXfer(g,s); }));
+  return {date:sess.date,period:sess.period,cls:cls,examSubs:r.examSubs,list:r.list,commonUsed:r.commonUsed,
+          transferList:xfer.map(function(s){ return {grade:g,cls:s.cls,no:stuNo(s),name:s.name,kind:xferKind(g,s)}; })};
+}
+// 혼합 시험실 = (이 학년 이 반 교실) 본반 남은 학생 + 짝 학년 같은 반 앞 번호 13명
+// 학년이 섞이면 번호가 겹치므로 좌석·공석 기록용 id는 "학년-반-번호" 문자열을 쓴다
+function buildMixedCtx(sess,cls){
+  var g=String(currentGrade), pg=partnerGrade(g);
+  var inClass=studentsOf(g).filter(function(s){ return s.cls===cls; });
+  var xfer=inClass.filter(function(s){ return isXfer(g,s); }).sort(byNo);
+  var goneIds={}; moversOf(g,cls).forEach(function(s){ goneIds[s.id]=1; });
+  var homeRaw=inClass.filter(function(s){ return !isXfer(g,s) && !goneIds[s.id]; }).sort(byNo);
+  var moverRaw=moversOf(pg,cls);
+  var H=classifyStudents(g,sess,homeRaw), M=classifyStudents(pg,sess,moverRaw);
+  function tag(arr,mover){ arr.forEach(function(s){ s.no=stuNo(s.ref); s.mover=mover; s.id=s.grade+"-"+s.cls+"-"+s.no; }); return arr; }
+  tag(H.list,false); tag(M.list,true);
+  var ebg={}; ebg[g]=H.examSubs; ebg[pg]=M.examSubs;
+  var all=H.examSubs.slice(); M.examSubs.forEach(function(x){ if(all.indexOf(x)<0) all.push(x); });
+  return {date:sess.date,period:sess.period,cls:cls,mixed:true,grade:g,partner:pg,
+          examSubs:all,examSubsByGrade:ebg,
+          homeList:H.list,moverList:M.list,list:H.list.concat(M.list),
+          commonUsed:H.commonUsed||M.commonUsed,
+          transferList:xfer.map(function(s){ return {grade:g,cls:s.cls,no:stuNo(s),name:s.name,kind:xferKind(g,s)}; })};
+}
+// 좌석표 맨 아래 표기: 이 반 학생 중 교실 밖(전환학급 등)에서 시험 보는 학생
+function xferKind(g,s){ var v=transfer[g+"|"+s.cls+"|"+stuNo(s)]; return (typeof v==="string" && v)? v : "전환학급"; }
+function xferNoteText(ctx){
+  var a=(ctx&&ctx.transferList)||[];
+  if(!a.length) return "";
+  var by={}, ks=[];
+  a.forEach(function(t){ if(!by[t.kind]){ by[t.kind]=[]; ks.push(t.kind); } by[t.kind].push(t.no+"번 "+t.name); });
+  return "※ "+a[0].grade+"-"+a[0].cls+" "+ks.map(function(k){ return k+" 응시 "+by[k].length+"명: "+by[k].join(", "); }).join(" / ")+" (이 교실 좌석 없음)";
+}
+// 학생 카드에 쓰는 번호 표시 (혼합 시험실의 이동반 학생은 "2-1 · 3")
+function seatLabel(s){ return (s && s.mover)? (s.grade+"-"+s.cls+" · "+s.no) : String(s.no!=null? s.no : s.id); }
 
 // 연속 배치 시 같은 과목이 최대한 한 줄에 모이는 줄별 좌석 수(5~7) 계산
 function bestCounts(list,order){
@@ -1138,13 +1382,24 @@ function bestCounts(list,order){
   return best||[7,7,7,7];
 }
 // 추천 좌석 수를 UI 드롭다운에 반영
-function suggestSeats(list,order){ var best=bestCounts(list,order); seatSels.forEach(function(s,k){ s.value=best[k]; }); }
+function suggestSeats(list,order){
+  if(seatMixed) return;   // 혼합 시험실은 정해 둔 줄별 좌석 수(기본 5/6/4/6/4)를 그대로 쓴다
+  var best=bestCounts(list,order); seatSels.forEach(function(s,k){ s.value=best[k]; });
+}
 function seatCounts(){ return seatSels.map(function(s){return Number(s.value);}); }
+function colsCap(counts,cols){ return cols.reduce(function(a,c){ return a+(Number(counts[c])||0); },0); }
 function updateCap(){
   if(!current) return;
-  var cap=seatCounts().reduce(function(a,b){return a+b;},0), need=current.list.length, ok=cap>=need;
+  var counts=seatCounts();
+  var cap=seatCap(counts), need=current.list.length, ok=cap>=need;
   capDiv.className="cap "+(ok?"ok":"err");
   capDiv.innerHTML="정원 <b>"+cap+"석</b> / 필요 <b>"+need+"명</b> "+(ok?"· 빈자리 "+(cap-need):"· <b>"+(need-cap)+"석 부족</b>");
+  if(ok && current.mixed && counts.length===5){
+    var mc=colsCap(counts,MIX_MOVER_COLS), hc=colsCap(counts,MIX_HOME_COLS);
+    var mn=current.moverList.length, hn=current.homeList.length;
+    capDiv.innerHTML+="<br>이동반(1·3·5줄) "+mc+"석 / "+mn+"명 · 본반(2·4줄) "+hc+"석 / "+hn+"명";
+    if(mc<mn||hc<hn){ capDiv.className="cap err"; capDiv.innerHTML+="<br>⚠ 자리가 모자란 쪽 학생은 다른 줄 빈자리에 앉습니다."; }
+  }
   btnSeat.disabled=!ok; btnSeat.onclick=renderChart;
   // 좌석 수를 바꾸면 이미 그려둔 좌석표도 새 좌석 수로 다시 그린다
   // (저장된 수동 배치는 좌석 수가 달라진 순간 무효가 되므로 자동 배치로 돌아간다)
@@ -1153,6 +1408,30 @@ function updateCap(){
 
 // ===== 배치: 시간표 과목 순서대로 운동장쪽(1줄)부터 세로로 연속 배치, 자습은 맨 뒤 =====
 function placeStudents(list,counts,order){
+  var seq=subjectSeq(list,order);
+  // 1줄부터 세로로 연속 채우고, 한 줄이 다 차면 다음 줄로 이어서 배치
+  var grid=counts.map(function(n){ return new Array(n).fill(null); });
+  var idx=0;
+  for(var c=0;c<counts.length;c++){ for(var r=0;r<counts[c];r++){ if(idx<seq.length) grid[c][r]=seq[idx++]; } }
+  return grid;
+}
+// 혼합 시험실: 이동반은 1·3·5줄, 본반은 2·4줄에 각각 과목별→번호순으로 세로 연속 배치
+// (한쪽 줄이 모자라면 남은 학생은 다른 줄 빈자리에 이어서 앉힌다)
+function mixedPlace(ctx,counts){
+  var grid=counts.map(function(n){ return new Array(n).fill(null); });
+  var left=[];
+  function fill(seq,cols){
+    var idx=0;
+    cols.forEach(function(c){ if(c>=counts.length) return; for(var r=0;r<counts[c];r++){ if(idx<seq.length) grid[c][r]=seq[idx++]; } });
+    while(idx<seq.length) left.push(seq[idx++]);
+  }
+  fill(subjectSeq(ctx.moverList,ctx.examSubsByGrade[ctx.partner]),MIX_MOVER_COLS);
+  fill(subjectSeq(ctx.homeList,ctx.examSubsByGrade[ctx.grade]),MIX_HOME_COLS);
+  for(var c=0;c<counts.length && left.length;c++){ for(var r=0;r<counts[c] && left.length;r++){ if(!grid[c][r]) grid[c][r]=left.shift(); } }
+  return grid;
+}
+// 과목순(시간표 순서) → 번호순으로 한 줄로 이어붙인 순서. 자습은 맨 뒤
+function subjectSeq(list,order){
   order=order||[];
   // 과목별 그룹화 (자습 포함)
   var bySub={};
@@ -1164,12 +1443,9 @@ function placeStudents(list,counts,order){
   if(bySub["자습"]) keys.push("자습");
   // 과목순 → 학번순으로 한 줄로 이어붙이기
   var seq=[];
-  keys.forEach(function(k){ bySub[k].slice().sort(function(a,b){return (a.id||0)-(b.id||0);}).forEach(function(s){ seq.push(s); }); });
-  // 1줄부터 세로로 연속 채우고, 한 줄이 다 차면 다음 줄로 이어서 배치
-  var grid=counts.map(function(n){ return new Array(n).fill(null); });
-  var idx=0;
-  for(var c=0;c<counts.length;c++){ for(var r=0;r<counts[c];r++){ if(idx<seq.length) grid[c][r]=seq[idx++]; } }
-  return grid;
+  function num(s){ return Number(s.no!=null? s.no : s.id)||0; }
+  keys.forEach(function(k){ bySub[k].slice().sort(function(a,b){return num(a)-num(b);}).forEach(function(s){ seq.push(s); }); });
+  return seq;
 }
 
 // ===== 수동 조정(드래그 이동) =====
@@ -1182,7 +1458,20 @@ function flatToGrid(flat,counts){
 }
 function seatCap(counts){ return counts.reduce(function(a,b){return a+Number(b);},0); }
 // 자동 배치 결과를 평면 배열로
-function autoFlat(ctx,counts){ return gridToFlat(placeStudents(ctx.list,counts,ctx.examSubs)); }
+function autoFlat(ctx,counts){
+  if(ctx.mixed && counts.length===5) return gridToFlat(mixedPlace(ctx,counts));
+  return gridToFlat(placeStudents(ctx.list,counts,ctx.examSubs));
+}
+// 혼합 시험실에서 평면 배열 칸 번호 → 그 칸이 속한 블록("mv" 이동반 / "hm" 본반). 혼합이 아니면 모두 같은 블록
+function flatBlocks(ctx,counts){
+  var b=[];
+  counts.forEach(function(n,c){
+    var k=(ctx.mixed && counts.length===5)? (MIX_MOVER_COLS.indexOf(c)>=0? "mv" : "hm") : "all";
+    for(var r=0;r<n;r++) b.push(k);
+  });
+  return b;
+}
+function blockOf(ctx,s){ return (ctx.mixed)? (s.mover? "mv" : "hm") : "all"; }
 // 저장된 수동 배치(학번 배열)를 실제 학생 객체 평면 배열로 복원
 function manualFlat(ctx,counts,order,out){
   var cap=seatCap(counts);
@@ -1199,7 +1488,14 @@ function manualFlat(ctx,counts,order,out){
   }
   // 저장 이후 새로 생긴 학생은 자동 배치 순서대로 남은 빈자리에 채운다 (공석 자리는 건너뜀)
   var left=autoFlat(ctx,counts).filter(function(s){ return s && !used[s.id] && !isOut[s.id]; });
-  if(left.length){ for(var j=0;j<cap && left.length;j++){ if(!flat[j]) flat[j]=left.shift(); } }
+  if(left.length){
+    var blk=flatBlocks(ctx,counts);   // 혼합 시험실이면 자기 블록(이동반/본반) 빈자리부터
+    left=left.filter(function(s){
+      for(var j=0;j<cap;j++){ if(!flat[j] && blk[j]===blockOf(ctx,s)){ flat[j]=s; return false; } }
+      return true;
+    });
+    for(var j=0;j<cap && left.length;j++){ if(!flat[j]) flat[j]=left.shift(); }
+  }
   return flat;
 }
 // 자동 배치 + 명단 제외 학생 자리는 공석으로 (다른 학생은 자리가 움직이지 않는다)
@@ -1243,8 +1539,15 @@ function renderChart(){
   var owners=seatOwners(current,counts), nameOf={};
   current.list.forEach(function(s){ nameOf[s.id]=s.name; });
   var cols="", flat=0;
-  for(var c=0;c<4;c++){
-    cols+='<div class="col"><div class="coltag">'+(c+1)+'줄</div>';
+  var mixed=current.mixed && counts.length===5;
+  for(var c=0;c<counts.length;c++){
+    var ctag=(c+1)+'줄', ccls='';
+    if(mixed){
+      var isMv=MIX_MOVER_COLS.indexOf(c)>=0;
+      ctag+=' · '+(isMv? '이동 '+current.partner+'-'+current.cls : '본반 '+current.grade+'-'+current.cls);
+      ccls=isMv?' mv':' hm';
+    }
+    cols+='<div class="col"><div class="coltag'+ccls+'">'+ctag+'</div>';
     for(var r=0;r<counts[c];r++){
       var s=grid[c][r], fi=flat++;
       if(s===BLOCK){
@@ -1258,7 +1561,7 @@ function renderChart(){
       }
       if(!s){ cols+='<div class="seat empty" data-flat="'+fi+'">빈자리</div>'; continue; }
       var col=colorFor(s.subject), sub=s.status==="exam"?s.subject:"자습";
-      cols+='<div class="seat" data-flat="'+fi+'" title="끌어서 자리 옮기기" style="border-color:'+col+';background:'+col+'14"><button class="seat-x" data-flat="'+fi+'" title="이 학생을 모든 과목에서 빼고 공석으로">✕</button><span class="sid">'+esc(String(s.id))+'</span><span class="sname" style="font-size:'+nameFont(s.name)+'px">'+esc(s.name)+'</span><span class="ssub" style="color:'+col+'">'+esc(sub)+'</span></div>';
+      cols+='<div class="seat'+(s.mover?' mover':'')+'" data-flat="'+fi+'" title="끌어서 자리 옮기기" style="border-color:'+col+';background:'+col+'14"><button class="seat-x" data-flat="'+fi+'" title="이 학생을 모든 과목에서 빼고 공석으로">✕</button><span class="sid">'+esc(seatLabel(s))+'</span><span class="sname" style="font-size:'+nameFont(s.name)+'px">'+esc(s.name)+'</span><span class="ssub" style="color:'+col+'">'+esc(sub)+'</span></div>';
     }
     cols+='</div>';
   }
@@ -1280,7 +1583,9 @@ function renderChart(){
     });
     outHtml+='</div>';
   }
-  var html=hint+outHtml+'<div class="board">칠판 / 교탁 (앞)</div><div class="chartroom"><div class="cside">'+esc(dirL)+'</div><div class="seatgrid">'+cols+'</div><div class="cside">'+esc(dirR)+'</div></div><div class="back">뒤</div>';
+  var xf=xferNoteText(current);
+  var html=hint+outHtml+'<div class="board">칠판 / 교탁 (앞)</div><div class="chartroom"><div class="cside">'+esc(dirL)+'</div><div class="seatgrid" style="grid-template-columns:repeat('+counts.length+',1fr)">'+cols+'</div><div class="cside">'+esc(dirR)+'</div></div><div class="back">뒤</div>'
+    +(xf?'<div class="xfer-note">'+esc(xf)+'</div>':'');
   chart.innerHTML=html;
   $("chart-actions").classList.remove("hidden");
   $("btn-print").onclick=doPrint;
@@ -1397,8 +1702,20 @@ function pullSeats(){
 function pullOne(ctx,counts){
   var cap=seatCap(counts);
   var order=currentOrder(ctx,counts);
-  var ids=order.filter(function(v){ return v!=null && v!==BLOCK; });
-  while(ids.length<cap) ids.push(null);
+  var ids;
+  if(ctx.mixed && counts.length===5){
+    // 혼합 시험실: 이동반 줄끼리, 본반 줄끼리만 앞으로 당긴다 (블록 구조 유지)
+    var blk=flatBlocks(ctx,counts);
+    ids=new Array(cap).fill(null);
+    ["mv","hm"].forEach(function(b){
+      var slots=[], vals=[];
+      for(var i=0;i<cap;i++){ if(blk[i]!==b) continue; slots.push(i); if(order[i]!=null && order[i]!==BLOCK) vals.push(order[i]); }
+      slots.forEach(function(at,k){ ids[at]=(k<vals.length)? vals[k] : null; });
+    });
+  }else{
+    ids=order.filter(function(v){ return v!=null && v!==BLOCK; });
+    while(ids.length<cap) ids.push(null);
+  }
   if(order.every(function(v,i){ return v===ids[i]; }) && !hasManual(ctx,counts)) return false;  // 이미 빈틈없이 차 있음
   var out=getOut(ctx,counts).map(function(o){ return {id:o.id, at:null}; });   // 공석 표시는 지우되 뺀 학생은 계속 제외
   setManual(ctx,counts,ids,out);
@@ -1544,7 +1861,7 @@ function seatCellHTML(s,seatH){
   var hbase=seatH?('height:'+seatH+'mm;'):'';
   if(!s || s===BLOCK) return '<div class="pseat empty" style="'+hbase+'"></div>';
   var col=colorFor(s.subject), sub=s.status==="exam"?s.subject:"자습";
-  return '<div class="pseat" style="'+hbase+'border-color:'+col+';background:'+col+'22"><span class="psid" style="color:'+col+'">'+esc(String(s.id))+'</span><span class="psname" style="font-size:'+nameFontPrint(s.name)+'px">'+esc(s.name)+'</span><span class="pssub" style="color:'+col+'">'+esc(sub)+'</span></div>';
+  return '<div class="pseat'+(s.mover?' mover':'')+'" style="'+hbase+'border-color:'+col+';background:'+col+'22"><span class="psid" style="color:'+col+'">'+esc(seatLabel(s))+'</span><span class="psname" style="font-size:'+nameFontPrint(s.name)+'px">'+esc(s.name)+'</span><span class="pssub" style="color:'+col+'">'+esc(sub)+'</span></div>';
 }
 // 한 장의 배치표(sheet) HTML 생성 — ctx/counts/방향을 명시적으로 받아 단일·일괄 인쇄 공용
 function buildSheetCtx(ctx,mode,counts,dirL,dirR){
@@ -1552,19 +1869,35 @@ function buildSheetCtx(ctx,mode,counts,dirL,dirR){
   var outSet=countOutSetOf(ctx,counts);            // 재적 제외 학생만 응시인원에서 뺀다 (자리만 공석은 그대로 센다)
   var examN=ctx.list.filter(function(s){return s.status==="exam" && !outSet[s.id];}).length;
   var subjLabel=ctx.examSubs.length?ctx.examSubs.join(" / "):"자습";
+  var clsLabel=(currentGrade?currentGrade+"학년 ":"")+ctx.cls+"반", cntHtml='응시인원 &nbsp;<b>'+examN+'명</b>';
+  if(ctx.mixed){
+    var gs=[ctx.grade,ctx.partner];
+    subjLabel=gs.map(function(g){ var a=ctx.examSubsByGrade[g]||[]; return g+"학년 "+(a.length?a.join("/"):"자습"); }).join(" · ");
+    clsLabel=ctx.grade+"학년 "+ctx.cls+"반 교실";
+    var byG=gs.map(function(g){
+      var n=ctx.list.filter(function(s){ return s.grade===g && s.status==="exam" && !outSet[s.id]; }).length;
+      return (g===ctx.grade? "본반 " : "이동 ")+g+"-"+ctx.cls+" "+n+"명";
+    });
+    cntHtml='응시인원 &nbsp;<b>'+examN+'명</b> &nbsp;('+byG.join(" · ")+')';
+  }
   var colOrder,rowReverse,podiumBottom,leftLabel,rightLabel,ghead;
-  if(mode==="board"){ colOrder=[0,1,2,3]; rowReverse=false; podiumBottom=false; leftLabel=dirL; rightLabel=dirR; ghead="칠판게시용"; }
-  else { colOrder=[3,2,1,0]; rowReverse=true; podiumBottom=true; leftLabel=dirR; rightLabel=dirL; ghead="교탁게시용"; }
+  var fwd=counts.map(function(_,i){ return i; });
+  if(mode==="board"){ colOrder=fwd; rowReverse=false; podiumBottom=false; leftLabel=dirL; rightLabel=dirR; ghead="칠판게시용"; }
+  else { colOrder=fwd.slice().reverse(); rowReverse=true; podiumBottom=true; leftLabel=dirR; rightLabel=dirL; ghead="교탁게시용"; }
   var colsHtml="";
   var maxRows=Math.max.apply(null,counts);
-  var seatH=Math.max(15,Math.min(30,Math.floor((145-(maxRows-1)*2)/maxRows)));
+  // 하단 전환학급 표기가 있으면 그만큼(약 14mm) 좌석 높이를 줄여 한 쪽 안에 들어가게 한다
+  var seatBudget=xferNoteText(ctx)? 127 : 145;
+  var seatH=Math.max(15,Math.min(30,Math.floor((seatBudget-(maxRows-1)*2)/maxRows)));
   colOrder.forEach(function(c){ var cells=grid[c].slice(); if(rowReverse) cells=cells.reverse(); colsHtml+='<div class="pcol '+(podiumBottom?'alignB':'alignT')+'">'+cells.map(function(cc){return seatCellHTML(cc,seatH);}).join("")+'</div>'; });
   var podium='<div class="ppodium">교 탁</div>';
-  var sides='<div class="proom"><div class="pside">'+esc(leftLabel)+'</div><div class="pcols">'+colsHtml+'</div><div class="pside">'+esc(rightLabel)+'</div></div>';
-  var head='<div class="phead"><span class="pcls">'+(currentGrade?currentGrade+"학년 ":"")+ctx.cls+'반</span><span class="psub">'+esc(subjLabel)+'</span><span class="ptitle">자리배치도</span><span class="pghead">'+ghead+'</span></div>';
-  var note='<div class="pnote">'+esc(ctx.date)+' '+esc(ctx.period)+'교시 · ※ 시험 직전 쉬는 시간에 미리 자신의 자리를 찾아 앉아주세요</div>';
-  var cnt='<div class="pcount">응시인원 &nbsp;<b>'+examN+'명</b></div>';
-  return '<div class="sheet"><div class="sheet-top">'+head+note+cnt+'</div><div class="sheet-body">'+(podiumBottom?sides+podium:podium+sides)+'</div></div>';
+  var sides='<div class="proom"><div class="pside">'+esc(leftLabel)+'</div><div class="pcols" style="grid-template-columns:repeat('+counts.length+',1fr)">'+colsHtml+'</div><div class="pside">'+esc(rightLabel)+'</div></div>';
+  var head='<div class="phead"><span class="pcls">'+esc(clsLabel)+'</span><span class="psub">'+esc(subjLabel)+'</span><span class="ptitle">자리배치도</span><span class="pghead">'+ghead+'</span></div>';
+  var note='<div class="pnote">'+esc(ctx.date)+' '+esc(ctx.period)+'교시 · ※ 시험 직전 쉬는 시간에 미리 자신의 자리를 찾아 앉아주세요'+(ctx.mixed?' · 테두리가 두 줄인 자리 = 이동해 온 '+esc(ctx.partner)+'학년 학생':'')+'</div>';
+  var cnt='<div class="pcount">'+cntHtml+'</div>';
+  var xf=xferNoteText(ctx);
+  var foot=xf? '<div class="pxfer">'+esc(xf)+'</div>' : '';
+  return '<div class="sheet"><div class="sheet-top">'+head+note+cnt+'</div><div class="sheet-body">'+(podiumBottom?sides+podium:podium+sides)+'</div>'+foot+'</div>';
 }
 function buildSheet(mode){ return buildSheetCtx(current,mode,seatCounts(),($("dir-left").value||"").trim(),($("dir-right").value||"").trim()); }
 function doPrint(){ $("printarea").innerHTML=buildSheet("board")+buildSheet("podium"); window.print(); }
@@ -1605,9 +1938,15 @@ function renderSummary(){
   summary.className="summary";
   var nGone=list.length-live.length;
   var nKeep=list.filter(function(s){ return gone[s.id]===EXC_SEAT; }).length;
-  var html='<b>'+(currentGrade?currentGrade+"학년 ":"")+cls+'반</b> · '+esc(date)+' '+esc(period)+'교시<br>시험과목: <b>'+(examSubs.length?esc(examSubs.join(" / ")):"없음(자습 교시)")+'</b> · 총 <b>'+live.length+'명</b> (응시 '+exam+' / 자습 '+(live.length-exam)+')'
+  var subjTxt=(examSubs.length?esc(examSubs.join(" / ")):"없음(자습 교시)");
+  if(current.mixed){
+    subjTxt=[current.grade,current.partner].map(function(g){ var a=current.examSubsByGrade[g]||[]; return g+"학년 "+esc(a.length?a.join("/"):"자습"); }).join(" · ");
+  }
+  var html='<b>'+(currentGrade?currentGrade+"학년 ":"")+cls+'반'+(current.mixed?' 교실':'')+'</b> · '+esc(date)+' '+esc(period)+'교시<br>시험과목: <b>'+subjTxt+'</b> · 총 <b>'+live.length+'명</b> (응시 '+exam+' / 자습 '+(live.length-exam)+')'
     +(nGone?' · 재적 제외 <b>'+nGone+'명</b>':'')
     +(nKeep?' · 자리만 공석 <b>'+nKeep+'명</b>(인원 포함)':'')+'<br>'+tags;
+  if(current.mixed) html+='<div class="note" style="background:#f5f1fb;border-color:#ddd0ef;color:#5b4380">혼합 시험실: 본반 <b>'+current.grade+'-'+cls+' '+current.homeList.length+'명</b>(2·4줄) + 이동해 온 <b>'+current.partner+'-'+cls+' '+current.moverList.length+'명</b>(1·3·5줄). 이 반 앞 번호 '+MOVERS+'명은 '+current.partner+'-'+cls+' 교실로 갑니다.</div>';
+  var xf=xferNoteText(current); if(xf) html+='<div class="note">'+esc(xf)+'</div>';
   if(commonUsed) html+='<div class="note">⚠ <b>'+esc(commonUsed)+'</b>은(는) 명렬표에 과목 열이 없어 <b>공통 과목(전원 응시)</b>으로 처리했습니다.</div>';
   summary.innerHTML=html;
 }
@@ -1619,7 +1958,7 @@ function renderRosterTable(){
     var cell=!out? '<span style="color:'+c+';font-weight:600">'+esc(s.subject)+'</span>'
       : (md===EXC_SEAT? '<span style="color:#2f5c96;font-weight:600">자리만 공석 · 재적 유지</span>'
                       : '<span style="color:#9aa5b1;font-weight:600">재적 제외(명단에서 빠짐)</span>');
-    html+='<tr'+(out?' style="opacity:.55"':'')+'><td>'+esc(String(s.id))+'</td><td><input class="name-edit" type="text" data-i="'+i+'" value="'+esc(s.name)+'"></td><td>'+cell+'</td></tr>';
+    html+='<tr'+(out?' style="opacity:.55"':'')+'><td>'+esc(s.mover? seatLabel(s)+" (이동)" : (current.mixed? s.grade+"-"+s.cls+" · "+s.no : String(s.id)))+'</td><td><input class="name-edit" type="text" data-i="'+i+'" value="'+esc(s.name)+'"></td><td>'+cell+'</td></tr>';
   });
   rosterDiv.innerHTML=html+'</tbody></table>'; rosterWrap.classList.remove("hidden");
 }
@@ -1631,7 +1970,8 @@ function onNameEdit(e,rerender){
   var nm=t.value;
   stu.name=nm;                                   // 현재 배치용 명단
   if(stu.ref) stu.ref.name=nm;                   // 마스터 명렬표(단일·일괄 인쇄 공용)
-  saveNameOverride(stu.cls, stu.id, nm);         // 저장 (새로고침·재업로드 후 유지)
+  var src=stu.ref||stu;                          // 혼합 시험실 id("2-1-3")가 아니라 원래 학번으로 저장
+  saveNameOverride(stu.grade||currentGrade, src.cls, src.id, nm);   // 저장 (새로고침·재업로드 후 유지)
   // 이미 자리배치가 만들어져 있으면 화면 차트도 즉시 갱신
   if(rerender && !$("chart-actions").classList.contains("hidden")) renderChart();
 }
