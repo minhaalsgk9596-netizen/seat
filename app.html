@@ -14,7 +14,7 @@
 /* document.open()으로 문서를 갈아끼워도 window는 그대로 살아 있다.
    교체된 새 문서에서는 이 표시를 반드시 지워야 본문 스크립트가 실행된다. */
 window.__SEAT_SWAPPED=false;
-var APP_VERSION="2026.11.26.1";/*@VERSION@*/
+var APP_VERSION="2026.11.26.2";/*@VERSION@*/
 var UPDATE_BASE="https://minhaalsgk9596-netizen.github.io/seat/";
 var CACHE_KEY="seat_app_cache_v1";
 
@@ -24,6 +24,7 @@ var CACHE_KEY="seat_app_cache_v1";
    직접 적을 때는 최신 버전이 항상 맨 위에 오도록 하세요. ────────── */
 var CHANGELOG=[
 /*@CHANGELOG@*/
+  {v:"2026.11.26.2", d:"2026-11-26", items:["세부 기능 개선"]},
   {v:"2026.11.26.1", d:"2026-11-26", items:["세부 기능 개선"]},
   {v:"2026.09.30.1", d:"2026-09-30", items:["세부 기능 개선"]},
   {v:"2026.09.29.6", d:"2026-09-29", items:["세부 기능 개선"]},
@@ -1769,6 +1770,8 @@ function onDragShiftKey(ev){
 }
 function startSeatDrag(d,ev){
   d.started=true;
+  var sc=seatCounts();
+  d.blk=(current && current.mixed && sc.length===5)? flatBlocks(current,sc) : null;   // 칸별 블록(이동반/본반)
   var r=d.seat.getBoundingClientRect();
   d.dx=r.left-ev.clientX; d.dy=r.top-ev.clientY;
   var g=d.seat.cloneNode(true);
@@ -1808,6 +1811,9 @@ function hitTest(d){
   d.ghost.style.visibility="";
   var t=(el&&el.closest)?el.closest(".seat"):null;
   if(t===d.seat || (t&&(t.dataset.flat==null||t.dataset.blocked==="1"))) t=null;   // 공석에는 놓을 수 없다
+  // 혼합 시험실: 본반은 본반 줄(2·4줄) 안에서만, 이동반은 이동반 줄(1·3·5줄) 안에서만 옮긴다
+  d.cross=false;
+  if(t && d.blk && d.blk[Number(t.dataset.flat)]!==d.blk[d.from]){ d.cross=true; t=null; }
   if(t!==d.target){
     if(d.target) d.target.classList.remove("drop-push","drop-swap");
     d.target=t;
@@ -1817,8 +1823,8 @@ function hitTest(d){
 // 지금 놓으면 어떻게 되는지(밀어내기/맞바꾸기)를 배지와 테두리로 표시
 function paintDragMode(d){
   var swap=!!d.swap;
-  d.badge.textContent=swap?"자리 맞바꾸기":"여기로 옮기기 (뒤 학생 밀림)";
-  d.badge.style.background=swap?"#c0504d":"#1f3864";
+  d.badge.textContent=d.cross? "본반↔이동반 줄 사이로는 옮길 수 없습니다" : (swap?"자리 맞바꾸기":"여기로 옮기기 (뒤 학생 밀림)");
+  d.badge.style.background=d.cross? "#64748b" : (swap?"#c0504d":"#1f3864");
   d.badge.style.left=(d.x+14)+"px";
   d.badge.style.top=(d.y+18)+"px";
   if(d.target){ d.target.classList.toggle("drop-push",!swap); d.target.classList.toggle("drop-swap",swap); }
@@ -1845,7 +1851,11 @@ function finishSeatDrag(ev,apply){
     var tmp=order[d.from]; order[d.from]=order[to]; order[to]=tmp;
   }else{                                             // 밀어내기: 빼서 그 자리에 끼워넣기 (공석은 제자리에 그대로)
     var free=[], vals=[];
-    for(var i=0;i<order.length;i++){ if(order[i]!==BLOCK){ free.push(i); vals.push(order[i]); } }
+    for(var i=0;i<order.length;i++){
+      if(order[i]===BLOCK) continue;
+      if(d.blk && d.blk[i]!==d.blk[d.from]) continue;   // 혼합 시험실: 같은 블록 칸끼리만 밀어낸다
+      free.push(i); vals.push(order[i]);
+    }
     var pf=free.indexOf(d.from), pt=free.indexOf(to);
     if(pf<0||pt<0) return;
     var moved=vals.splice(pf,1)[0];
