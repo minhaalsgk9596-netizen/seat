@@ -14,7 +14,7 @@
 /* document.open()으로 문서를 갈아끼워도 window는 그대로 살아 있다.
    교체된 새 문서에서는 이 표시를 반드시 지워야 본문 스크립트가 실행된다. */
 window.__SEAT_SWAPPED=false;
-var APP_VERSION="2026.11.26.2";/*@VERSION@*/
+var APP_VERSION="2026.11.27.1";/*@VERSION@*/
 var UPDATE_BASE="https://minhaalsgk9596-netizen.github.io/seat/";
 var CACHE_KEY="seat_app_cache_v1";
 
@@ -24,6 +24,7 @@ var CACHE_KEY="seat_app_cache_v1";
    직접 적을 때는 최신 버전이 항상 맨 위에 오도록 하세요. ────────── */
 var CHANGELOG=[
 /*@CHANGELOG@*/
+  {v:"2026.11.27.1", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.26.2", d:"2026-11-26", items:["세부 기능 개선"]},
   {v:"2026.11.26.1", d:"2026-11-26", items:["세부 기능 개선"]},
   {v:"2026.09.30.1", d:"2026-09-30", items:["세부 기능 개선"]},
@@ -1300,6 +1301,16 @@ function runRoster(){
 function normSubj(x){
   return String(x||"").replace(/[\s·ㆍ・•.]/g,"").replace(/Ⅰ/g,"1").replace(/Ⅱ/g,"2").replace(/Ⅲ/g,"3").replace(/Ⅳ/g,"4");
 }
+// 집중이수제: 학년별로 그 과목을 응시하는 반을 고정 (명렬표 표시보다 우선)
+//   1학년 — 기술·가정: 1~6반 / 한문: 7~12반
+const INTENSIVE={ "1":[ {subj:"기술가정", from:1, to:6}, {subj:"한문", from:7, to:12} ] };
+// 규칙이 있는 과목이면 응시 여부(true/false), 없으면 null
+function intensiveTakes(g,s,x){
+  var rules=INTENSIVE[String(g)]; if(!rules) return null;
+  var n=normSubj(x);
+  for(var i=0;i<rules.length;i++){ var r=rules[i]; if(normSubj(r.subj)===n) return s.cls>=r.from && s.cls<=r.to; }
+  return null;
+}
 function classifyStudents(g,sess,students){
   var subjSet=subjectsOf(g);
   var canon={}; subjSet.forEach(function(x){ canon[normSubj(x)]=x; });
@@ -1308,7 +1319,7 @@ function classifyStudents(g,sess,students){
   var commonSubs=examSubs.filter(function(x){return !subjSet.has(x);});
   var commonUsed=null;
   var list=students.map(function(s){
-    var hit=examSubs.filter(function(x){return subjSet.has(x) && s.subs.has(x);});
+    var hit=examSubs.filter(function(x){ var ic=intensiveTakes(g,s,x); return ic!==null? ic : (subjSet.has(x) && s.subs.has(x)); });
     var base;
     if(hit.length) base=Object.assign({},s,{status:"exam",subject:hit[0]});
     else if(commonSubs.length){ commonUsed=commonSubs[0]; base=Object.assign({},s,{status:"exam",subject:commonSubs[0]}); }
