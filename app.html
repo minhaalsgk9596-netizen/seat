@@ -14,7 +14,7 @@
 /* document.open()으로 문서를 갈아끼워도 window는 그대로 살아 있다.
    교체된 새 문서에서는 이 표시를 반드시 지워야 본문 스크립트가 실행된다. */
 window.__SEAT_SWAPPED=false;
-var APP_VERSION="2026.11.27.2";/*@VERSION@*/
+var APP_VERSION="2026.11.27.3";/*@VERSION@*/
 var UPDATE_BASE="https://minhaalsgk9596-netizen.github.io/seat/";
 var CACHE_KEY="seat_app_cache_v1";
 
@@ -24,6 +24,7 @@ var CACHE_KEY="seat_app_cache_v1";
    직접 적을 때는 최신 버전이 항상 맨 위에 오도록 하세요. ────────── */
 var CHANGELOG=[
 /*@CHANGELOG@*/
+  {v:"2026.11.27.3", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.27.2", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.27.1", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.26.2", d:"2026-11-26", items:["세부 기능 개선"]},
@@ -601,7 +602,7 @@ const XFER_KEY="seating.transfer.v1";          // 전환학급 응시 학생 {"�
 const MIXC_KEY="seating.mixCounts.v1";         // 혼합 시험실 줄별 좌석 수
 const MOVERS=13;                               // 상대 반 교실로 옮기는 인원
 const XFER_KINDS=["전환학급"];                  // 응시현황 파일에서 '교실 밖 응시'로 읽는 열
-const MIX_DEFAULT=[5,6,4,6,4];                 // 이동반|본반|이동반|본반|이동반
+const MIX_DEFAULT=[5,6,5,6,3];                 // 이동반|본반|이동반|본반|이동반 (이동반 13명 = 5/5/3)
 const MIX_MOVER_COLS=[0,2,4], MIX_HOME_COLS=[1,3];
 
 // ===== 드래그로 손본 자리 배치 저장: 학년|반|날짜|교시 별로 기억 =====
@@ -713,7 +714,13 @@ function saveNameOverride(g,cls,id,nm){ nameOverrides[ovKey(g,cls,id)]=nm; local
 // 1-1↔2-1, 1-2↔2-2 … 같은 반 번호끼리 짝. 각 반에서 전환학급 응시자를 뺀 앞 번호 13명이 상대 반 교실로 간다.
 var mixMode=!!lsGetEarly(MIX_KEY);
 var transfer=(function(){ var j=lsGetEarly(XFER_KEY); return (j&&typeof j==="object")? j : {}; })();
-var mixCounts=(function(){ var j=lsGetEarly(MIXC_KEY); return (Array.isArray(j)&&j.length===5)? j.map(Number) : MIX_DEFAULT.slice(); })();
+// 예전 기본값(5/6/4/6/4)으로 저장돼 있으면 새 기본값(5/6/5/6/3)으로 바꾼다
+function fixMixCounts(j){
+  if(!(Array.isArray(j)&&j.length===5)) return MIX_DEFAULT.slice();
+  j=j.map(Number);
+  return (j.join("/")==="5/6/4/6/4")? MIX_DEFAULT.slice() : j;
+}
+var mixCounts=fixMixCounts(lsGetEarly(MIXC_KEY));
 function lsGetEarly(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function partnerGrade(g){ g=String(g); return g==="1"?"2":(g==="2"?"1":""); }
 function studentsOf(g){ var R=rostersByGrade[String(g)]; return (R&&R.students)||[]; }
@@ -776,7 +783,7 @@ function syncSeatUI(){
   $("col-4-wrap").classList.toggle("hidden",!mixed);
   document.querySelector(".row-inputs").classList.toggle("five",mixed);
   $("seatcfg-title").textContent=mixed? "④ 좌석 설정 (5개 줄 · 혼합 시험실)" : "④ 좌석 설정 (4개 줄)";
-  $("seatcfg-hint").innerHTML=mixed? "1·3·5줄 = <b>이동반</b>(상대 학년), 2·4줄 = <b>본반</b>. 기본 5/6/4/6/4석이며 바꿀 수 있습니다." : "각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.";
+  $("seatcfg-hint").innerHTML=mixed? "1·3·5줄 = <b>이동반</b>(상대 학년), 2·4줄 = <b>본반</b>. 기본 5/6/5/6/3석이며 바꿀 수 있습니다." : "각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.";
   $("dir-right-label").textContent=(mixed?"5":"4")+"줄 쪽 방향";
 }
 syncSeatUI();
@@ -829,7 +836,7 @@ var EMBED_ON=false;
     if(EMBEDDED_DATA.manualSeats) manualSeats=EMBEDDED_DATA.manualSeats;     // 손본 배치·열 당기기 결과
     mixMode=!!EMBEDDED_DATA.mixMode;                                         // 1·2학년 혼합 시험실 (예전 배포본은 꺼짐)
     transfer=(EMBEDDED_DATA.transfer&&typeof EMBEDDED_DATA.transfer==="object")? EMBEDDED_DATA.transfer : {};
-    if(Array.isArray(EMBEDDED_DATA.mixCounts)&&EMBEDDED_DATA.mixCounts.length===5) mixCounts=EMBEDDED_DATA.mixCounts.map(Number);
+    if(Array.isArray(EMBEDDED_DATA.mixCounts)&&EMBEDDED_DATA.mixCounts.length===5) mixCounts=fixMixCounts(EMBEDDED_DATA.mixCounts);
     rostersByGrade=unpackRosters(EMBEDDED_DATA.rosters);
     saveSched(); saveSBG(); saveRosters();
     lsSet(NO_KEY, nameOverrides); lsSet(EXC_KEY, excluded); lsSet(SEX_KEY, sessionExcluded); lsSet(MS_KEY, manualSeats);
@@ -1396,7 +1403,7 @@ function bestCounts(list,order){
 }
 // 추천 좌석 수를 UI 드롭다운에 반영
 function suggestSeats(list,order){
-  if(seatMixed) return;   // 혼합 시험실은 정해 둔 줄별 좌석 수(기본 5/6/4/6/4)를 그대로 쓴다
+  if(seatMixed) return;   // 혼합 시험실은 정해 둔 줄별 좌석 수(기본 5/6/5/6/3)를 그대로 쓴다
   var best=bestCounts(list,order); seatSels.forEach(function(s,k){ s.value=best[k]; });
 }
 function seatCounts(){ return seatSels.map(function(s){return Number(s.value);}); }
