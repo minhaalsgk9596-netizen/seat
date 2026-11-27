@@ -24,7 +24,7 @@
 /* document.open()으로 문서를 갈아끼워도 window는 그대로 살아 있다.
    교체된 새 문서에서는 이 표시를 반드시 지워야 본문 스크립트가 실행된다. */
 window.__SEAT_SWAPPED=false;
-var APP_VERSION="2026.11.27.4";/*@VERSION@*/
+var APP_VERSION="2026.11.27.5";/*@VERSION@*/
 var UPDATE_BASE="https://minhaalsgk9596-netizen.github.io/seat/";
 var CACHE_KEY="seat_app_cache_v1";
 
@@ -34,6 +34,7 @@ var CACHE_KEY="seat_app_cache_v1";
    직접 적을 때는 최신 버전이 항상 맨 위에 오도록 하세요. ────────── */
 var CHANGELOG=[
 /*@CHANGELOG@*/
+  {v:"2026.11.27.5", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.27.4", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.27.3", d:"2026-11-27", items:["세부 기능 개선"]},
   {v:"2026.11.27.2", d:"2026-11-27", items:["세부 기능 개선"]},
@@ -462,11 +463,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       <label>세션 <select id="sel-session" disabled></select></label>
       <label>반 <select id="sel-class" disabled></select></label>
     </div>
-    <button id="btn-run" class="btn" disabled>명단 생성</button>
+    <button id="btn-run" class="btn" disabled>자리 배치 생성</button>
 
     <div id="seatcfg" class="hidden">
       <h2 id="seatcfg-title">④ 좌석 설정 (4개 줄)</h2>
-      <p class="hint" id="seatcfg-hint">각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.</p>
+      <p class="hint" id="seatcfg-hint">각 줄(분단)에 앉힐 좌석 수입니다. 알맞은 값이 자동으로 정해지며, 바꾸면 배치표가 바로 다시 그려집니다.</p>
       <div class="row-inputs">
         <label>1줄 <select class="seat-sel" id="col-0"></select></label>
         <label>2줄 <select class="seat-sel" id="col-1"></select></label>
@@ -479,7 +480,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         <label><span id="dir-right-label">4줄 쪽 방향</span> <input type="text" id="dir-right" value="복도"></label>
       </div>
       <div id="cap" class="cap"></div>
-      <button id="btn-seat" class="btn">자리 배치 생성</button>
+      <button id="btn-seat" class="btn hidden">자리 배치 생성</button>
 
       <div class="batch-print">
         <p class="hint">담임용: <b>위 좌석 설정 그대로</b> 선택한 반의 <b>모든 교시</b> 배치표를 한 번에 인쇄합니다.</p>
@@ -506,7 +507,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   </section>
 
   <section class="panel output">
-    <div id="summary" class="summary empty">명렬표를 불러오고, 시간표에서 세션과 반을 선택하세요.</div>
+    <div id="summary" class="summary empty">명렬표를 불러오고, 세션과 반을 고른 뒤 [자리 배치 생성]을 누르세요.</div>
     <div id="chart-actions" class="hidden">
       <button id="btn-print" class="btn-print">🖨 인쇄 / PDF 저장 (칠판·교탁게시용)</button>
       <button id="btn-pull-seats" class="btn-pull hidden">⬆ 열 당기기 (모든 교시 공석 없이 앞으로)</button>
@@ -804,7 +805,7 @@ function syncSeatUI(){
   $("col-4-wrap").classList.toggle("hidden",!mixed);
   document.querySelector(".row-inputs").classList.toggle("five",mixed);
   $("seatcfg-title").textContent=mixed? "④ 좌석 설정 (5개 줄 · 혼합 시험실)" : "④ 좌석 설정 (4개 줄)";
-  $("seatcfg-hint").innerHTML=mixed? "1·3·5줄 = <b>이동반</b>(상대 학년), 2·4줄 = <b>본반</b>. 기본 5/6/5/6/3석이며 바꿀 수 있습니다." : "각 줄(분단)에 앉힐 좌석 수를 5~7 중에서 고르세요.";
+  $("seatcfg-hint").innerHTML=mixed? "1·3·5줄 = <b>이동반</b>(상대 학년), 2·4줄 = <b>본반</b>. 기본 5/6/5/6/3석이며, 바꾸면 배치표가 바로 다시 그려집니다." : "각 줄(분단)에 앉힐 좌석 수입니다. 알맞은 값이 자동으로 정해지며, 바꾸면 배치표가 바로 다시 그려집니다.";
   $("dir-right-label").textContent=(mixed?"5":"4")+"줄 쪽 방향";
 }
 syncSeatUI();
@@ -991,7 +992,7 @@ function resetView(){
   chart.innerHTML=""; $("chart-actions").classList.add("hidden");
   rosterWrap.classList.add("hidden");
   summary.className="summary empty";
-  summary.textContent="세션과 반을 고르고 [명단 생성]을 누르세요.";
+  summary.textContent="세션과 반을 고르고 [자리 배치 생성]을 누르세요.";
 }
 (function wireMix(){
   var cb=$("mix-on"), ta=$("xfer-text");
@@ -1242,7 +1243,7 @@ selGrade.onchange=function(){
   chart.innerHTML=""; $("chart-actions").classList.add("hidden");
   rosterWrap.classList.add("hidden");
   summary.className="summary empty";
-  summary.textContent="세션과 반을 고르고 [명단 생성]을 누르세요.";
+  summary.textContent="세션과 반을 고르고 [자리 배치 생성]을 누르세요.";
 };
 
 // ===== 배포용 파일 만들기 =====
@@ -1310,8 +1311,11 @@ function makeDist(){
   st.innerHTML="✓ <b>"+esc(fname)+"</b> 저장 완료<br>명렬표 "+gradeListLabel()+" · 시간표 "+schedule.length+"교시가 들어갔습니다. 이 파일을 담임선생님들께 나눠주세요.";
 }
 
-// ===== 명단 생성 (분류) =====
+// ===== 자리 배치 생성: 명단 분류 → 좌석 수 추천 → 배치표까지 한 번에 =====
 btnRun.onclick=runRoster;
+// 배치표를 보고 있는 중에 세션·반을 바꾸면 그 교시·반으로 바로 다시 만든다
+selSession.addEventListener("change",function(){ if(current) runRoster(); });
+selClass.addEventListener("change",function(){ if(current) runRoster(); });
 function runRoster(){
   if(selSession.value===""){ alert("세션을 선택하세요."); return; }
   if(!currentGrade){ alert("명렬표(편성현황) 파일을 먼저 불러오세요."); return; }
@@ -1320,9 +1324,8 @@ function runRoster(){
   current=buildRosterCtx(sess,cls);
   renderSummary(); renderRosterTable();
   suggestSeats(current.list, current.examSubs);
-  chart.innerHTML="<p class='ph'>좌석 수를 정하고 <b>자리 배치 생성</b>을 누르세요.</p>";
-  $("chart-actions").classList.add("hidden");   // ★ updateCap 앞에 두어야 이전 좌석표가 다시 그려지지 않음
-  seatcfg.classList.remove("hidden"); updateCap();
+  $("chart-actions").classList.add("hidden");
+  seatcfg.classList.remove("hidden"); updateCap();   // 자리가 충분하면 여기서 바로 배치표를 그린다
 }
 // 한 세션(교시)·한 반의 응시/자습 명단을 계산 (단일·일괄 인쇄 공용)
 // 한 학년 학생들을 그 교시 시간표에 맞춰 응시 과목/자습으로 분류
@@ -1442,9 +1445,13 @@ function updateCap(){
     if(mc<mn||hc<hn){ capDiv.className="cap err"; capDiv.innerHTML+="<br>⚠ 자리가 모자란 쪽 학생은 다른 줄 빈자리에 앉습니다."; }
   }
   btnSeat.disabled=!ok; btnSeat.onclick=renderChart;
-  // 좌석 수를 바꾸면 이미 그려둔 좌석표도 새 좌석 수로 다시 그린다
+  // 좌석 수가 정해지면(바뀌면) 바로 배치표를 그린다
   // (저장된 수동 배치는 좌석 수가 달라진 순간 무효가 되므로 자동 배치로 돌아간다)
-  if(ok && !$("chart-actions").classList.contains("hidden")) renderChart();
+  if(ok) renderChart();
+  else{
+    $("chart-actions").classList.add("hidden");
+    chart.innerHTML="<p class='ph'>좌석이 <b>"+(need-cap)+"석</b> 모자랍니다. 왼쪽 <b>④ 좌석 설정</b>에서 줄별 좌석 수를 늘리면 바로 배치표가 그려집니다.</p>";
+  }
 }
 
 // ===== 배치: 시간표 과목 순서대로 운동장쪽(1줄)부터 세로로 연속 배치, 자습은 맨 뒤 =====
@@ -2043,7 +2050,7 @@ if(EMBED_ON){
   bn.textContent=(EMBEDDED_DATA.title? EMBEDDED_DATA.title+" · " : "")+"명렬표·시간표 내장됨";
   bn.title="이 파일에는 명렬표와 시험 시간표가 이미 들어 있습니다"+(EMBEDDED_DATA.madeAt?" (만든 날짜: "+EMBEDDED_DATA.madeAt+")":"");
   bn.classList.remove("hidden");
-  summary.textContent="학년·세션·반을 고르고 [명단 생성]을 누르세요.";
+  summary.textContent="학년·세션·반을 고르고 [자리 배치 생성]을 누르세요.";
 }
 
 // 초기 렌더
